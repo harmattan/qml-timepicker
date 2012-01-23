@@ -1,10 +1,50 @@
 import QtQuick 1.1
 
+/*
+Copyright (c) 2011-2012, Vasiliy Sorokin <sorokin.vasiliy@gmail.com>, Aleksey Mikhailichenko <a.v.mich@gmail.com>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+* Neither the name of the vsorokin nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+Usage:
+
+    TimePicker {
+        id: timePicker
+        anchors.centerIn: parent
+
+        function orientationSuffix() {
+            if (screen.currentOrientation === Screen.Portrait || screen.currentOrientation === Screen.PortraitInverted )
+                return "portrait"
+            else
+                return "landscape"
+        }
+
+        backgroundImage: "image://theme/meegotouch-timepicker-light-1-" + orientationSuffix()
+        hourDotImage: "image://theme/meegotouch-timepicker-disc-hours-" + orientationSuffix()
+        minutesDotImage: "image://theme/meegotouch-timepicker-disc-minutes-" + orientationSuffix()
+    }
+*/
+
+
 Item {
     id: timePicker
-
-    width: 400
-    height: 400
 
     property int hours: 0
     property int minutes: 0
@@ -12,6 +52,12 @@ Item {
     property alias backgroundImage: bg.source
     property alias hourDotImage: hourDot.source
     property alias minutesDotImage: minuteDot.source
+
+    property int minuteGradDelta: 6
+    property int hourGradDelta: 30
+
+    width: bg.sourceSize.width
+    height: bg.sourceSize.height
 
     onHoursChanged: {
         if (hours == 24)
@@ -25,53 +71,54 @@ Item {
 
     Image {
         id: bg
+
         anchors.fill: parent
 
-
-        property int centerX: 200
-        property int centerY: 200
-
-        property int minuteRadius: 152
-        property int hourRadius: 65
-
-        property int minuteGradDelta: 6
-        property int hourGradDelta: 30
-
-        property int diameter: 73
+        property int centerX: parent.width / 2
+        property int centerY: parent.height / 2
 
         Image {
             id: hourDot
+            anchors.fill: parent
+            rotation: timePicker.hours * 30
+            smooth: true
+        }
 
+        Text {
+            id: hourText
+            property int hourRadius: parent.width * 0.055
+            property int hourTrackRadius: parent.width * 0.16
 
-            x: (bg.centerX - bg.diameter / 2) + bg.hourRadius * Math.cos(timePicker.hours * bg.hourGradDelta * (3.14 / 180) - (90 * (3.14 / 180)))
-            y: (bg.centerY - bg.diameter / 2) + bg.hourRadius * Math.sin(timePicker.hours * bg.hourGradDelta * (3.14 / 180) - (90 * (3.14 / 180)))
+            x: (parent.centerX - hourRadius) + hourTrackRadius
+               * Math.cos(timePicker.hours * timePicker.hourGradDelta * (Math.PI / 180) - (Math.PI / 2));
+            y: (parent.centerY - hourRadius) + hourTrackRadius
+               * Math.sin(timePicker.hours * timePicker.hourGradDelta * (Math.PI / 180) - (Math.PI / 2));
 
-            width: bg.diameter
-            height: bg.diameter
+            font.pixelSize: timePicker.width * 0.1
 
-            Text {
-                font.pixelSize: 40
-                anchors.centerIn: parent
-
-                text: (timePicker.hours < 10 ? "0" : "") + timePicker.hours
-            }
+            text: (timePicker.hours < 10 ? "0" : "") + timePicker.hours
         }
 
         Image {
             id: minuteDot
+            anchors.fill: parent
+            rotation: timePicker.minutes * 6
+            smooth: true
+        }
 
-            x: (bg.centerX - bg.diameter / 2) + bg.minuteRadius * Math.cos(timePicker.minutes * bg.minuteGradDelta * (3.14 / 180) - (90 * (3.14 / 180)))
-            y: (bg.centerY - bg.diameter / 2) + bg.minuteRadius * Math.sin(timePicker.minutes * bg.minuteGradDelta * (3.14 / 180) - (90 * (3.14 / 180)))
+        Text {
+            id: minuteText
+            property int minuteRadius: parent.width * 0.055
+            property int minuteTrackRadius: parent.width * 0.38
 
-            width: bg.diameter
-            height: bg.diameter
+            x: parent.centerX - minuteRadius + minuteTrackRadius
+                * Math.cos(timePicker.minutes * timePicker.minuteGradDelta * (Math.PI / 180) - (Math.PI / 2));
+            y: parent.centerY - minuteRadius + minuteTrackRadius
+                * Math.sin(timePicker.minutes * timePicker.minuteGradDelta * (Math.PI / 180) - (Math.PI / 2));
 
-            Text {
-                font.pixelSize: 40
-                anchors.centerIn: parent
-                color: "#CCCCCC"
-                text: (timePicker.minutes < 10 ? "0" : "") + timePicker.minutes
-            }
+            font.pixelSize: timePicker.width * 0.1
+            color: "#CCCCCC"
+            text: (timePicker.minutes < 10 ? "0" : "") + timePicker.minutes
         }
     }
 
@@ -100,10 +147,10 @@ Item {
             newAlpha = findAlpha(mouseX, mouseY)
 
             if (currentHandler > 0) {
-                timePicker.minutes = getNewTime(timePicker.minutes, newAlpha, bg.minuteGradDelta, 1)
+                timePicker.minutes = getNewTime(timePicker.minutes, newAlpha, timePicker.minuteGradDelta, 1)
             }
             else
-                timePicker.hours = getNewTime(timePicker.hours, newAlpha, bg.hourGradDelta, 2)
+                timePicker.hours = getNewTime(timePicker.hours, newAlpha, timePicker.hourGradDelta, 2)
         }
 
         function sign(number) {
@@ -112,8 +159,6 @@ Item {
 
         function getNewTime(source, alpha, resolution, boundFactor) {
             var delta = alpha - previousAlpha
-
-
 
             if (Math.abs(delta) < resolution)
                 return source
@@ -146,9 +191,10 @@ Item {
         }
 
         function chooseHandler(mouseX, mouseY) {
-            if (bg.hourRadius + bg.diameter / 2 > Math.sqrt(Math.pow(bg.centerX - mouseX, 2) + Math.pow(bg.centerY - mouseY, 2)))
+            var radius = Math.sqrt(Math.pow(bg.centerX - mouseX, 2) + Math.pow(bg.centerY - mouseY, 2));
+            if (radius <= bg.width * 0.25)
                 return 0
-            else if (bg.minuteRadius + bg.diameter / 2 > Math.sqrt(Math.pow(bg.centerX - mouseX, 2) + Math.pow(bg.centerY - mouseY, 2)))
+            else if(radius < bg.width * 0.5)
                 return 1
             return -1
         }
